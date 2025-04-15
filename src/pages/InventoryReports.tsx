@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +16,6 @@ import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-// Sample data for inventory reports
 const inventoryReportsData = [
   {
     id: 1,
@@ -66,7 +64,6 @@ const inventoryReportsData = [
   }
 ];
 
-// Sample data for low stock items
 const lowStockItemsData = [
   { id: 1, name: "Ürün A", currentStock: 5, minRequiredStock: 10, category: "Elektronik" },
   { id: 2, name: "Ürün B", currentStock: 3, minRequiredStock: 15, category: "Giyim" },
@@ -82,14 +79,11 @@ const InventoryReports = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showUploader, setShowUploader] = useState(false);
 
-  // Filter reports based on filters
   const filteredReports = inventoryReportsData.filter(report => {
-    // Category filter
     if (selectedCategory !== "all" && selectedCategory !== report.category) {
       return false;
     }
     
-    // Date filter (if date is set)
     if (date) {
       const reportDate = new Date(report.date);
       const filterDate = new Date(date);
@@ -101,7 +95,6 @@ const InventoryReports = () => {
       }
     }
     
-    // Search filter
     if (searchTerm) {
       return report.name.toLowerCase().includes(searchTerm.toLowerCase());
     }
@@ -109,11 +102,9 @@ const InventoryReports = () => {
     return true;
   });
 
-  // Handle file upload
   const handleFileUpload = (file: File) => {
     if (!file) return;
     
-    // Simulate upload process
     setTimeout(() => {
       toast({
         title: "Rapor Yüklendi",
@@ -140,25 +131,7 @@ const InventoryReports = () => {
         </div>
 
         {showUploader ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Stok Raporu Yükle</CardTitle>
-              <CardDescription>
-                Excel veya CSV formatında stok raporu yükleyin
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ReportUploader onFileUpload={handleFileUpload} />
-            </CardContent>
-            <CardFooter className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowUploader(false)}>
-                İptal
-              </Button>
-              <Button className="bg-store-700 hover:bg-store-800" disabled>
-                Yükle ve İşle
-              </Button>
-            </CardFooter>
-          </Card>
+          <ReportUploader onFileUpload={handleFileUpload} />
         ) : null}
 
         <Tabs defaultValue="reports" className="space-y-4">

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,11 @@ import { useToast } from "@/components/ui/use-toast";
 import { UploadCloud, CheckCircle2, AlertCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
-const ReportUploader = () => {
+interface ReportUploaderProps {
+  onFileUpload?: (file: File) => void;
+}
+
+const ReportUploader = ({ onFileUpload }: ReportUploaderProps) => {
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [reportName, setReportName] = useState("");
@@ -104,6 +107,11 @@ const ReportUploader = () => {
           title: "Rapor başarıyla yüklendi",
           description: `${reportName} raporu sisteme eklendi.`,
         });
+        
+        // Call the onFileUpload callback if provided
+        if (onFileUpload && file) {
+          onFileUpload(file);
+        }
       }
     }, 200);
   };
