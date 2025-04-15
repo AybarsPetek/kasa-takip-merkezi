@@ -1,13 +1,27 @@
-
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DollarSign, TrendingUp, ArrowUpCircle, ArrowDownCircle, CalendarRange } from "lucide-react";
+import { DollarSign, TrendingUp, ArrowUpCircle, ArrowDownCircle, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [isResetting, setIsResetting] = useState(false);
 
   // Sample data for the dashboard
   const todayStats = {
@@ -33,6 +47,33 @@ const Index = () => {
     { id: 3, name: "Şubat Ayı Stok Raporu", date: "2023-02-01", items: 212 }
   ];
 
+  const resetAllData = async () => {
+    try {
+      setIsResetting(true);
+      
+      const { data, error } = await supabase.functions.invoke('reset-data');
+      
+      if (error) {
+        throw new Error('Veri sıfırlama sırasında bir hata oluştu');
+      }
+      
+      toast({
+        title: "Başarılı",
+        description: "Tüm veriler sıfırlandı",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Veri sıfırlama hatası:", error);
+      toast({
+        title: "Hata",
+        description: error.message || "Veri sıfırlama sırasında bir hata oluştu",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -45,6 +86,37 @@ const Index = () => {
             >
               Yeni Kasa Sayımı
             </Button>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Verileri Sıfırla
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Tüm verileri sıfırlamak istediğinize emin misiniz?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Bu işlem, sistemdeki tüm kasa sayımlarını, nakit teslimlerini ve stok raporlarını silecektir.
+                    Bu eylem geri alınamaz.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>İptal</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={resetAllData}
+                    className="bg-red-500 hover:bg-red-600"
+                    disabled={isResetting}
+                  >
+                    {isResetting ? 'Sıfırlanıyor...' : 'Evet, Sıfırla'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
 
