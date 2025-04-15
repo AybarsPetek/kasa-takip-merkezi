@@ -1,43 +1,99 @@
 
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
-import { useState } from "react";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import DashboardTabs from "@/components/dashboard/DashboardTabs";
+import { fetchRecentTransactions, fetchRecentReports, fetchTodayStats } from "@/services/dashboardService";
+import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
-  // Sample data for the dashboard
-  const todayStats = {
-    totalCash: 12850,
-    cashIn: 8250,
-    cashOut: 3100,
-    difference: 5150
+  // Fetch today's statistics
+  const { data: todayStats, isLoading: statsLoading, error: statsError } = useQuery({
+    queryKey: ['todayStats'],
+    queryFn: fetchTodayStats
+  });
+
+  // Fetch recent transactions
+  const { data: recentTransactions, isLoading: transactionsLoading, error: transactionsError } = useQuery({
+    queryKey: ['recentTransactions'],
+    queryFn: () => fetchRecentTransactions(5)
+  });
+
+  // Fetch recent reports
+  const { data: recentReports, isLoading: reportsLoading, error: reportsError } = useQuery({
+    queryKey: ['recentReports'],
+    queryFn: () => fetchRecentReports(3)
+  });
+
+  // Handle errors
+  useEffect(() => {
+    if (statsError) {
+      toast({
+        title: "Hata",
+        description: "İstatistikler yüklenirken bir hata oluştu.",
+        variant: "destructive",
+      });
+    }
+    
+    if (transactionsError) {
+      toast({
+        title: "Hata",
+        description: "İşlemler yüklenirken bir hata oluştu.",
+        variant: "destructive",
+      });
+    }
+    
+    if (reportsError) {
+      toast({
+        title: "Hata",
+        description: "Raporlar yüklenirken bir hata oluştu.",
+        variant: "destructive",
+      });
+    }
+  }, [statsError, transactionsError, reportsError]);
+
+  // Format transactions for display
+  const formattedTransactions = recentTransactions?.map(transaction => {
+    const isKasaSayim = 'banknot_toplami' in transaction;
+    return {
+      id: transaction.id,
+      type: isKasaSayim ? 'Kasa Sayım' : 'Nakit Teslim',
+      amount: isKasaSayim ? transaction.toplam : -transaction.miktar,
+      date: new Date(transaction.tarih).toLocaleString('tr-TR'),
+      status: transaction.durum
+    };
+  }) || [];
+
+  // Format reports for display
+  const formattedReports = recentReports?.map(report => {
+    return {
+      id: report.id,
+      name: report.ad,
+      date: new Date(report.tarih).toLocaleDateString('tr-TR'),
+      items: report.urun_sayisi
+    };
+  }) || [];
+
+  // Default values to use while data is loading
+  const defaultStats = {
+    totalCash: 0,
+    cashIn: 0,
+    cashOut: 0,
+    difference: 0
   };
-
-  // Last 5 transactions (sample data)
-  const recentTransactions = [
-    { id: 1, type: "Kasa Sayım", amount: 4520, date: "2023-04-15 08:30", status: "Tamamlandı" },
-    { id: 2, type: "Nakit Teslimi", amount: -2000, date: "2023-04-15 17:45", status: "Tamamlandı" },
-    { id: 3, type: "Kasa Sayım", amount: 5340, date: "2023-04-14 08:15", status: "Tamamlandı" },
-    { id: 4, type: "Nakit Teslimi", amount: -3000, date: "2023-04-14 18:00", status: "Tamamlandı" },
-    { id: 5, type: "Kasa Sayım", amount: 2990, date: "2023-04-13 08:45", status: "Tamamlandı" }
-  ];
-
-  // Recent inventory reports (sample data)
-  const recentReports = [
-    { id: 1, name: "Nisan Ayı Stok Raporu", date: "2023-04-01", items: 245 },
-    { id: 2, name: "Mart Ayı Stok Raporu", date: "2023-03-01", items: 230 },
-    { id: 3, name: "Şubat Ayı Stok Raporu", date: "2023-02-01", items: 212 }
-  ];
 
   return (
     <Layout>
       <div className="space-y-6">
         <DashboardHeader />
-        <DashboardStats todayStats={todayStats} />
+        <DashboardStats todayStats={todayStats || defaultStats} isLoading={statsLoading} />
         <DashboardTabs 
-          recentTransactions={recentTransactions} 
-          recentReports={recentReports} 
+          recentTransactions={formattedTransactions} 
+          recentReports={formattedReports}
+          isTransactionsLoading={transactionsLoading}
+          isReportsLoading={reportsLoading}
         />
       </div>
     </Layout>

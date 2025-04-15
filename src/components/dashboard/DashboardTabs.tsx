@@ -3,9 +3,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import TransactionsTable from "./TransactionsTable";
 import ReportsTable from "./ReportsTable";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Transaction {
-  id: number;
+  id: string | number;
   type: string;
   amount: number;
   date: string;
@@ -13,7 +14,7 @@ interface Transaction {
 }
 
 interface Report {
-  id: number;
+  id: string | number;
   name: string;
   date: string;
   items: number;
@@ -22,9 +23,16 @@ interface Report {
 interface DashboardTabsProps {
   recentTransactions: Transaction[];
   recentReports: Report[];
+  isTransactionsLoading?: boolean;
+  isReportsLoading?: boolean;
 }
 
-const DashboardTabs = ({ recentTransactions, recentReports }: DashboardTabsProps) => {
+const DashboardTabs = ({ 
+  recentTransactions, 
+  recentReports,
+  isTransactionsLoading = false,
+  isReportsLoading = false
+}: DashboardTabsProps) => {
   return (
     <Tabs defaultValue="transactions" className="space-y-4">
       <TabsList>
@@ -38,7 +46,15 @@ const DashboardTabs = ({ recentTransactions, recentReports }: DashboardTabsProps
             <CardTitle>Son İşlemler</CardTitle>
           </CardHeader>
           <CardContent>
-            <TransactionsTable transactions={recentTransactions} />
+            {isTransactionsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : (
+              <TransactionsTable transactions={recentTransactions} />
+            )}
           </CardContent>
         </Card>
       </TabsContent>
@@ -49,7 +65,15 @@ const DashboardTabs = ({ recentTransactions, recentReports }: DashboardTabsProps
             <CardTitle>Son Stok Raporları</CardTitle>
           </CardHeader>
           <CardContent>
-            <ReportsTable reports={recentReports} />
+            {isReportsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : (
+              <ReportsTable reports={recentReports} />
+            )}
           </CardContent>
         </Card>
       </TabsContent>

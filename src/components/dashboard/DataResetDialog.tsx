@@ -3,6 +3,7 @@ import { useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -18,6 +19,7 @@ import {
 
 const DataResetDialog = () => {
   const [isResetting, setIsResetting] = useState(false);
+  const queryClient = useQueryClient();
 
   const resetAllData = async () => {
     try {
@@ -28,6 +30,11 @@ const DataResetDialog = () => {
       if (error) {
         throw new Error('Veri sıfırlama sırasında bir hata oluştu');
       }
+      
+      // Invalidate all queries to force refetching data
+      queryClient.invalidateQueries({ queryKey: ['todayStats'] });
+      queryClient.invalidateQueries({ queryKey: ['recentTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['recentReports'] });
       
       toast({
         title: "Başarılı",

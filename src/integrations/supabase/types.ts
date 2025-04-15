@@ -9,7 +9,173 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      azalan_stok: {
+        Row: {
+          durum: string
+          id: string
+          kategori: string
+          mevcut_stok: number
+          minimum_stok: number
+          urun_adi: string
+        }
+        Insert: {
+          durum: string
+          id?: string
+          kategori: string
+          mevcut_stok: number
+          minimum_stok: number
+          urun_adi: string
+        }
+        Update: {
+          durum?: string
+          id?: string
+          kategori?: string
+          mevcut_stok?: number
+          minimum_stok?: number
+          urun_adi?: string
+        }
+        Relationships: []
+      }
+      kasa_sayim: {
+        Row: {
+          banknot_toplami: number
+          bozuk_para_toplami: number
+          durum: string
+          fark: number
+          id: string
+          kullanici_id: string
+          notlar: string | null
+          onceki_miktar: number
+          tarih: string
+          toplam: number
+        }
+        Insert: {
+          banknot_toplami?: number
+          bozuk_para_toplami?: number
+          durum?: string
+          fark?: number
+          id?: string
+          kullanici_id: string
+          notlar?: string | null
+          onceki_miktar?: number
+          tarih?: string
+          toplam?: number
+        }
+        Update: {
+          banknot_toplami?: number
+          bozuk_para_toplami?: number
+          durum?: string
+          fark?: number
+          id?: string
+          kullanici_id?: string
+          notlar?: string | null
+          onceki_miktar?: number
+          tarih?: string
+          toplam?: number
+        }
+        Relationships: []
+      }
+      kasa_sayim_detay: {
+        Row: {
+          adet: number
+          deger: number
+          id: string
+          kasa_sayim_id: string
+          para_tipi: string
+          toplam: number
+        }
+        Insert: {
+          adet: number
+          deger: number
+          id?: string
+          kasa_sayim_id: string
+          para_tipi: string
+          toplam: number
+        }
+        Update: {
+          adet?: number
+          deger?: number
+          id?: string
+          kasa_sayim_id?: string
+          para_tipi?: string
+          toplam?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kasa_sayim_detay_kasa_sayim_id_fkey"
+            columns: ["kasa_sayim_id"]
+            isOneToOne: false
+            referencedRelation: "kasa_sayim"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nakit_teslim: {
+        Row: {
+          durum: string
+          id: string
+          kullanici_id: string
+          miktar: number
+          notlar: string | null
+          tarih: string
+          teslim_alan: string
+        }
+        Insert: {
+          durum?: string
+          id?: string
+          kullanici_id: string
+          miktar: number
+          notlar?: string | null
+          tarih?: string
+          teslim_alan: string
+        }
+        Update: {
+          durum?: string
+          id?: string
+          kullanici_id?: string
+          miktar?: number
+          notlar?: string | null
+          tarih?: string
+          teslim_alan?: string
+        }
+        Relationships: []
+      }
+      stok_rapor: {
+        Row: {
+          ad: string
+          dosya_yolu: string | null
+          durum: string
+          id: string
+          kategori: string
+          kullanici_id: string
+          tarih: string
+          toplam_deger: number
+          urun_sayisi: number
+        }
+        Insert: {
+          ad: string
+          dosya_yolu?: string | null
+          durum?: string
+          id?: string
+          kategori?: string
+          kullanici_id: string
+          tarih: string
+          toplam_deger?: number
+          urun_sayisi?: number
+        }
+        Update: {
+          ad?: string
+          dosya_yolu?: string | null
+          durum?: string
+          id?: string
+          kategori?: string
+          kullanici_id?: string
+          tarih?: string
+          toplam_deger?: number
+          urun_sayisi?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
