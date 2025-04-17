@@ -1,15 +1,10 @@
-
 import { DollarSign, TrendingUp, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TodayStats } from "@/types/dashboardTypes";
 
 interface DashboardStatsProps {
-  todayStats: {
-    totalCash: number;
-    cashIn: number;
-    cashOut: number;
-    difference: number;
-  },
+  todayStats: TodayStats,
   isLoading?: boolean;
 }
 

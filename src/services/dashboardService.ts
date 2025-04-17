@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { Transaction, Report, TodayStats, LowStockItem } from "@/types/dashboardTypes";
 import { KasaSayim, NakitTeslim, StokRapor, AzalanStok } from "@/types/database";
-import { Transaction, Report } from "@/components/dashboard/DashboardTabs";
 
 // Fetch the latest cash counts
 export const fetchRecentTransactions = async (limit = 5): Promise<Transaction[]> => {
@@ -76,7 +76,7 @@ export const fetchRecentReports = async (limit = 5): Promise<Report[]> => {
 };
 
 // Fetch today's cash statistics
-export const fetchTodayStats = async () => {
+export const fetchTodayStats = async (): Promise<TodayStats> => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
@@ -126,7 +126,7 @@ export const fetchTodayStats = async () => {
 };
 
 // Fetch low stock items
-export const fetchLowStockItems = async (limit = 5) => {
+export const fetchLowStockItems = async (limit = 5): Promise<LowStockItem[]> => {
   const { data, error } = await supabase
     .from('azalan_stok')
     .select('*')
@@ -138,6 +138,13 @@ export const fetchLowStockItems = async (limit = 5) => {
     return [];
   }
   
-  // Return directly as we're not transforming the data further
-  return data;
+  // Map the data to our LowStockItem interface to ensure type safety
+  return data.map((item) => ({
+    id: item.id,
+    urun_adi: item.urun_adi,
+    mevcut_stok: item.mevcut_stok,
+    minimum_stok: item.minimum_stok,
+    kategori: item.kategori,
+    durum: item.durum as "Kritik" | "Az"
+  }));
 };

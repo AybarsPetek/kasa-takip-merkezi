@@ -5,7 +5,6 @@ import Layout from "@/components/Layout";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import DashboardTabs from "@/components/dashboard/DashboardTabs";
-import { Transaction, Report } from "@/components/dashboard/DashboardTabs";
 import { fetchRecentTransactions, fetchRecentReports, fetchTodayStats } from "@/services/dashboardService";
 import { toast } from "@/hooks/use-toast";
 

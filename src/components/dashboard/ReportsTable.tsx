@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Report } from "./DashboardTabs";
+import { Report } from "@/types/dashboardTypes";
 
 interface ReportsTableProps {
   reports: Report[];

@@ -4,22 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import TransactionsTable from "./TransactionsTable";
 import ReportsTable from "./ReportsTable";
 import { Skeleton } from "@/components/ui/skeleton";
-
-// Import types from the table components to ensure consistency
-export interface Transaction {
-  id: string | number;
-  type: string;
-  amount: number;
-  date: string;
-  status: string;
-}
-
-export interface Report {
-  id: string | number;
-  name: string;
-  date: string;
-  items: number;
-}
+import { Transaction, Report } from "@/types/dashboardTypes";
 
 interface DashboardTabsProps {
   recentTransactions: Transaction[];
