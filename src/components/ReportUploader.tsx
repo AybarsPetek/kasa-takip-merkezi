@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { UploadCloud, CheckCircle2, AlertCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { uploadReportFile } from "@/services/reportService";
 
 interface ReportUploaderProps {
   onFileUpload?: (file: File) => void;
+  onReportUploaded?: (reportId: string) => void;
 }
 
-const ReportUploader = ({ onFileUpload }: ReportUploaderProps) => {
+const ReportUploader = ({ onFileUpload, onReportUploaded }: ReportUploaderProps) => {
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [reportName, setReportName] = useState("");
@@ -58,7 +61,7 @@ const ReportUploader = ({ onFileUpload }: ReportUploaderProps) => {
   };
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!file) {
@@ -100,20 +103,56 @@ const ReportUploader = ({ onFileUpload }: ReportUploaderProps) => {
       
       if (progress >= 100) {
         clearInterval(interval);
+        processUpload();
+      }
+    }, 100);
+
+    // Call the onFileUpload callback if provided
+    if (onFileUpload && file) {
+      onFileUpload(file);
+    }
+  };
+  
+  // Process the actual upload after progress reaches 100%
+  const processUpload = async () => {
+    if (!file) return;
+
+    try {
+      const result = await uploadReportFile(file, reportName, reportDate);
+      
+      if (result) {
         setUploadStatus("success");
-        setUploading(false);
         
         toast({
           title: "Rapor başarıyla yüklendi",
           description: `${reportName} raporu sisteme eklendi.`,
         });
         
-        // Call the onFileUpload callback if provided
-        if (onFileUpload && file) {
-          onFileUpload(file);
+        // Notify parent component about the uploaded report
+        if (onReportUploaded) {
+          onReportUploaded(result.id);
         }
+      } else {
+        setUploadStatus("error");
+        
+        toast({
+          title: "Yükleme başarısız",
+          description: "Rapor yüklenirken bir hata oluştu.",
+          variant: "destructive",
+        });
       }
-    }, 200);
+    } catch (error) {
+      console.error("Upload error:", error);
+      setUploadStatus("error");
+      
+      toast({
+        title: "Yükleme hatası",
+        description: "Rapor yüklenirken bir hata oluştu.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
   };
   
   // Reset form
