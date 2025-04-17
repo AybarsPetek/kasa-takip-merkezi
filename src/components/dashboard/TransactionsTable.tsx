@@ -1,14 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-
-interface Transaction {
-  id: number;
-  type: string;
-  amount: number;
-  date: string;
-  status: string;
-}
+import { Transaction } from "./DashboardTabs";
 
 interface TransactionsTableProps {
   transactions: Transaction[];

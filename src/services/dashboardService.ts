@@ -1,9 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { KasaSayim, NakitTeslim, StokRapor, AzalanStok } from "@/types/database";
+import { Transaction, Report } from "@/components/dashboard/DashboardTabs";
 
 // Fetch the latest cash counts
-export const fetchRecentTransactions = async (limit = 5): Promise<KasaSayim[] | NakitTeslim[]> => {
+export const fetchRecentTransactions = async (limit = 5): Promise<Transaction[]> => {
   // Get recent cash counts
   const { data: kasaSayimData, error: kasaError } = await supabase
     .from('kasa_sayim')
@@ -28,17 +29,32 @@ export const fetchRecentTransactions = async (limit = 5): Promise<KasaSayim[] | 
     return [];
   }
   
+  // Map the Supabase data to our Transaction interface
+  const kasaTransactions: Transaction[] = kasaSayimData.map(item => ({
+    id: item.id,
+    type: 'Kasa Sayım',
+    amount: item.toplam,
+    date: new Date(item.tarih).toLocaleString('tr-TR'),
+    status: item.durum
+  }));
+  
+  const nakitTransactions: Transaction[] = nakitTeslimData.map(item => ({
+    id: item.id,
+    type: 'Nakit Teslim',
+    amount: -item.miktar, // Negative amount for cash deliveries
+    date: new Date(item.tarih).toLocaleString('tr-TR'),
+    status: item.durum
+  }));
+  
   // Combine and sort by date
-  const combinedTransactions = [
-    ...kasaSayimData.map(item => ({ ...item, type: 'Kasa Sayım' })),
-    ...nakitTeslimData.map(item => ({ ...item, type: 'Nakit Teslim' }))
-  ].sort((a, b) => new Date(b.tarih).getTime() - new Date(a.tarih).getTime());
+  const combinedTransactions = [...kasaTransactions, ...nakitTransactions]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   
   return combinedTransactions.slice(0, limit);
 };
 
 // Fetch the latest inventory reports
-export const fetchRecentReports = async (limit = 5): Promise<StokRapor[]> => {
+export const fetchRecentReports = async (limit = 5): Promise<Report[]> => {
   const { data, error } = await supabase
     .from('stok_rapor')
     .select('*')
@@ -50,7 +66,13 @@ export const fetchRecentReports = async (limit = 5): Promise<StokRapor[]> => {
     return [];
   }
   
-  return data;
+  // Map the Supabase data to our Report interface
+  return data.map(item => ({
+    id: item.id,
+    name: item.ad,
+    date: new Date(item.tarih).toLocaleDateString('tr-TR'),
+    items: item.urun_sayisi
+  }));
 };
 
 // Fetch today's cash statistics
@@ -104,7 +126,7 @@ export const fetchTodayStats = async () => {
 };
 
 // Fetch low stock items
-export const fetchLowStockItems = async (limit = 5): Promise<AzalanStok[]> => {
+export const fetchLowStockItems = async (limit = 5) => {
   const { data, error } = await supabase
     .from('azalan_stok')
     .select('*')
@@ -116,5 +138,6 @@ export const fetchLowStockItems = async (limit = 5): Promise<AzalanStok[]> => {
     return [];
   }
   
+  // Return directly as we're not transforming the data further
   return data;
 };

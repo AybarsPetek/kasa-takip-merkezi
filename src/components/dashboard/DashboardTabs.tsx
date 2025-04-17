@@ -5,7 +5,8 @@ import TransactionsTable from "./TransactionsTable";
 import ReportsTable from "./ReportsTable";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface Transaction {
+// Import types from the table components to ensure consistency
+export interface Transaction {
   id: string | number;
   type: string;
   amount: number;
@@ -13,7 +14,7 @@ interface Transaction {
   status: string;
 }
 
-interface Report {
+export interface Report {
   id: string | number;
   name: string;
   date: string;
