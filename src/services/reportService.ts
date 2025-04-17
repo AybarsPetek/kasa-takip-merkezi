@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export interface ReportData {
   id: string;
@@ -41,11 +41,6 @@ export const uploadReportFile = async (file: File, reportName: string, reportDat
 
     if (uploadError) {
       console.error("Error uploading file:", uploadError);
-      toast({
-        title: "Dosya yükleme hatası",
-        description: uploadError.message,
-        variant: "destructive",
-      });
       return null;
     }
 
@@ -54,38 +49,26 @@ export const uploadReportFile = async (file: File, reportName: string, reportDat
     const totalValue = items * (Math.floor(Math.random() * 500) + 100); // Simulated for now
 
     // Save report metadata to database
-    const reportData: Partial<ReportData> = {
-      name: reportName,
-      date: reportDate,
-      items: items,
-      totalValue: totalValue,
-      status: "Tamamlandı",
-      category: "Aylık", // Default category
-      fileName: file.name,
-      filePath: filePath
-    };
-
+    // For now, we'll use a placeholder user ID since we don't have auth implemented
+    const placeholderUserId = "00000000-0000-0000-0000-000000000000";
+    
     const { data: reportRecord, error: dbError } = await supabase
       .from('stok_rapor')
-      .insert([{
+      .insert({
         ad: reportName,
         tarih: reportDate,
         urun_sayisi: items,
         toplam_deger: totalValue,
         durum: "Tamamlandı",
         kategori: "Aylık",
-        dosya_yolu: filePath
-      }])
+        dosya_yolu: filePath,
+        kullanici_id: placeholderUserId // Adding the required kullanici_id field
+      })
       .select()
       .single();
 
     if (dbError) {
       console.error("Error saving report to database:", dbError);
-      toast({
-        title: "Veritabanı kayıt hatası",
-        description: dbError.message,
-        variant: "destructive",
-      });
       return null;
     }
 
@@ -102,11 +85,6 @@ export const uploadReportFile = async (file: File, reportName: string, reportDat
     };
   } catch (error) {
     console.error("Error processing report upload:", error);
-    toast({
-      title: "İşlem hatası",
-      description: "Rapor yükleme işlemi sırasında bir hata oluştu.",
-      variant: "destructive",
-    });
     return null;
   }
 };
@@ -228,7 +206,7 @@ export const downloadReportFile = async (filePath: string, fileName: string): Pr
     document.body.removeChild(link);
   } catch (error) {
     console.error("Error downloading file:", error);
-    toast({
+    useToast().toast({
       title: "Dosya indirme hatası",
       description: "Dosya indirilirken bir hata oluştu.",
       variant: "destructive",
