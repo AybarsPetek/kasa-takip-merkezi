@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { ChevronDown, Download, Eye, FileSpreadsheet, Loader2 } from "lucide-react";
-import { downloadReportFile, fetchReports, ReportData } from "@/services/reportService";
+import { downloadReportFile } from "@/services/reports/fileService";
+import { fetchReports, ReportData } from "@/services/reports";
 import { useToast } from "@/components/ui/use-toast";
 
 interface ReportsGridProps {

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { UploadCloud, CheckCircle2, AlertCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { uploadReportFile } from "@/services/reportService";
+import { uploadReportFile } from "@/services/reports";
 
 interface ReportUploaderProps {
   onFileUpload?: (file: File) => void;
@@ -23,12 +22,10 @@ const ReportUploader = ({ onFileUpload, onReportUploaded }: ReportUploaderProps)
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
 
-  // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       
-      // Check file type
       if (!selectedFile.name.endsWith('.xlsx') && !selectedFile.name.endsWith('.xls') && !selectedFile.name.endsWith('.csv')) {
         toast({
           title: "Desteklenmeyen dosya formatı",
@@ -38,7 +35,6 @@ const ReportUploader = ({ onFileUpload, onReportUploaded }: ReportUploaderProps)
         return;
       }
       
-      // Check file size (max 10MB)
       if (selectedFile.size > 10 * 1024 * 1024) {
         toast({
           title: "Dosya boyutu çok büyük",
@@ -50,17 +46,14 @@ const ReportUploader = ({ onFileUpload, onReportUploaded }: ReportUploaderProps)
       
       setFile(selectedFile);
       
-      // Extract report name from file name (remove extension)
       const fileName = selectedFile.name.split('.').slice(0, -1).join('.');
       setReportName(fileName);
       
-      // Set today's date as the default report date
       const today = new Date().toISOString().slice(0, 10);
       setReportDate(today);
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -91,11 +84,9 @@ const ReportUploader = ({ onFileUpload, onReportUploaded }: ReportUploaderProps)
       return;
     }
     
-    // Start upload process
     setUploading(true);
     setUploadStatus("uploading");
     
-    // Simulate upload progress
     let progress = 0;
     const interval = setInterval(() => {
       progress += 5;
@@ -107,13 +98,11 @@ const ReportUploader = ({ onFileUpload, onReportUploaded }: ReportUploaderProps)
       }
     }, 100);
 
-    // Call the onFileUpload callback if provided
     if (onFileUpload && file) {
       onFileUpload(file);
     }
   };
   
-  // Process the actual upload after progress reaches 100%
   const processUpload = async () => {
     if (!file) return;
 
@@ -128,7 +117,6 @@ const ReportUploader = ({ onFileUpload, onReportUploaded }: ReportUploaderProps)
           description: `${reportName} raporu sisteme eklendi.`,
         });
         
-        // Notify parent component about the uploaded report
         if (onReportUploaded) {
           onReportUploaded(result.id);
         }
@@ -155,7 +143,6 @@ const ReportUploader = ({ onFileUpload, onReportUploaded }: ReportUploaderProps)
     }
   };
   
-  // Reset form
   const resetForm = () => {
     setFile(null);
     setReportName("");
