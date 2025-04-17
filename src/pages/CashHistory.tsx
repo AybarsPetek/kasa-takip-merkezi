@@ -8,7 +8,7 @@ import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, Pagi
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Eye, CalendarIcon, CashIcon, TrendingUp, TrendingDown, Info, ArrowUp, ArrowDown } from "lucide-react";
+import { Loader2, Eye, CalendarIcon, Banknote, TrendingUp, TrendingDown, Info, ArrowUp, ArrowDown } from "lucide-react";
 import { format } from "date-fns";
 import { fetchCashCountHistory, fetchCashDeliveryHistory, fetchCashCountDetails, CashCountHistoryItem, CashDeliveryHistoryItem, CashCountDetailItem } from "@/services/cashService";
 
@@ -96,7 +96,12 @@ const CashHistory = () => {
     
     try {
       const { details } = await fetchCashCountDetails(count.id);
-      setCountDetails(details || []);
+      // Convert the string para_tipi to the correct type
+      const typedDetails = details.map(detail => ({
+        ...detail,
+        para_tipi: detail.para_tipi as "banknot" | "bozuk"
+      }));
+      setCountDetails(typedDetails);
     } catch (error) {
       console.error("Error loading details:", error);
       toast({
@@ -520,3 +525,4 @@ const CashHistory = () => {
 };
 
 export default CashHistory;
+
