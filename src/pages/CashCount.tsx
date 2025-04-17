@@ -1,6 +1,6 @@
 
 import Layout from "@/components/Layout";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -8,20 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import CashSummary from "@/components/CashSummary";
-
-// Types for cash denominations
-interface CashDenomination {
-  value: number;
-  label: string;
-  count: number;
-}
-
-// Types for cash delivery
-interface CashDelivery {
-  amount: number;
-  recipient: string;
-  note: string;
-}
+import { saveCashCount, saveCashDelivery, fetchPreviousCashDeliveries, fetchLatestCashCount, CashDenomination, CashDelivery } from "@/services/cashService";
+import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { format } from "date-fns";
 
 const CashCount = () => {
   const { toast } = useToast();
@@ -45,17 +34,52 @@ const CashCount = () => {
     { value: 0.01, label: "1 kuruş", count: 0 }
   ]);
   
-  const [previousCashAmount, setPreviousCashAmount] = useState<number>(5000);
+  const [previousCashAmount, setPreviousCashAmount] = useState<number>(0);
   const [cashDelivery, setCashDelivery] = useState<CashDelivery>({
     amount: 0,
     recipient: "",
     note: ""
   });
+  const [countNote, setCountNote] = useState<string>("");
+  const [countDate, setCountDate] = useState<string>(new Date().toISOString().slice(0, 16));
+  const [previousDeliveries, setPreviousDeliveries] = useState<any[]>([]);
+  
+  const [isCountLoading, setIsCountLoading] = useState<boolean>(false);
+  const [isDeliveryLoading, setIsDeliveryLoading] = useState<boolean>(false);
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
 
   // Calculate totals
   const banknotesTotal = banknotes.reduce((sum, item) => sum + (item.value * item.count), 0);
   const coinsTotal = coins.reduce((sum, item) => sum + (item.value * item.count), 0);
-  const cashTotal = banknotesTotal + coinsTotal;
+  const cashTotal = Math.round((banknotesTotal + coinsTotal) * 100) / 100;
+  
+  // Load previous amount and deliveries
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // Get latest cash count
+        const latestCount = await fetchLatestCashCount();
+        if (latestCount) {
+          setPreviousCashAmount(latestCount.toplam);
+        }
+        
+        // Get previous deliveries
+        const deliveries = await fetchPreviousCashDeliveries();
+        setPreviousDeliveries(deliveries);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        toast({
+          title: "Veri Yükleme Hatası",
+          description: "Önceki veriler yüklenirken bir hata oluştu.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [toast]);
   
   // Update count for banknotes
   const updateBanknoteCount = (index: number, count: number) => {
@@ -80,16 +104,45 @@ const CashCount = () => {
   };
   
   // Submit cash count
-  const submitCashCount = () => {
-    // In a real app, we would save this to a database
-    toast({
-      title: "Kasa sayımı kaydedildi",
-      description: `Toplam: ₺${cashTotal.toLocaleString()} - Tarih: ${new Date().toLocaleString()}`,
-    });
+  const submitCashCount = async () => {
+    setIsCountLoading(true);
+    
+    try {
+      await saveCashCount(
+        banknotesTotal,
+        coinsTotal,
+        cashTotal,
+        previousCashAmount,
+        cashTotal - previousCashAmount,
+        countNote,
+        countDate,
+        [...banknotes, ...coins]
+      );
+      
+      toast({
+        title: "Kasa sayımı kaydedildi",
+        description: `Toplam: ₺${cashTotal.toLocaleString()} - Tarih: ${new Date(countDate).toLocaleString('tr-TR')}`,
+      });
+      
+      // Update previous amount to current total
+      setPreviousCashAmount(cashTotal);
+      
+      // Reset form fields
+      setCountNote("");
+    } catch (error) {
+      console.error('Error submitting cash count:', error);
+      toast({
+        title: "Hata",
+        description: "Kasa sayımı kaydedilirken bir hata oluştu.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCountLoading(false);
+    }
   };
   
   // Submit cash delivery
-  const submitCashDelivery = () => {
+  const submitCashDelivery = async () => {
     if (cashDelivery.amount <= 0) {
       toast({
         title: "Hata",
@@ -117,18 +170,49 @@ const CashCount = () => {
       return;
     }
     
-    // In a real app, we would save this to a database
-    toast({
-      title: "Nakit teslimi kaydedildi",
-      description: `₺${cashDelivery.amount.toLocaleString()} - ${cashDelivery.recipient}`,
-    });
+    setIsDeliveryLoading(true);
     
-    // Reset form
-    setCashDelivery({
-      amount: 0,
-      recipient: "",
-      note: ""
-    });
+    try {
+      const result = await saveCashDelivery(cashDelivery);
+      
+      toast({
+        title: "Nakit teslimi kaydedildi",
+        description: `₺${cashDelivery.amount.toLocaleString()} - ${cashDelivery.recipient}`,
+      });
+      
+      // Update previous deliveries list
+      setPreviousDeliveries(prev => [result, ...prev.slice(0, 4)]);
+      
+      // Reset form
+      setCashDelivery({
+        amount: 0,
+        recipient: "",
+        note: ""
+      });
+    } catch (error) {
+      console.error('Error submitting cash delivery:', error);
+      toast({
+        title: "Hata",
+        description: "Nakit teslimi kaydedilirken bir hata oluştu.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeliveryLoading(false);
+    }
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    
+    if (date.toDateString() === now.toDateString()) {
+      return `Bugün, ${format(date, 'HH:mm')}`;
+    } else if (date.getTime() > now.getTime() - 86400000) {
+      return `Dün, ${format(date, 'HH:mm')}`;
+    } else {
+      return format(date, 'dd.MM.yyyy, HH:mm');
+    }
   };
 
   return (
@@ -171,7 +255,7 @@ const CashCount = () => {
                             className="col-span-1"
                           />
                           <div className="text-right font-medium">
-                            ₺{(banknote.value * banknote.count).toLocaleString()}
+                            ₺{(banknote.value * banknote.count).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                           </div>
                         </div>
                       ))}
@@ -179,7 +263,7 @@ const CashCount = () => {
                   </CardContent>
                   <CardFooter className="justify-between">
                     <div className="text-sm text-muted-foreground">Toplam</div>
-                    <div className="text-lg font-bold">₺{banknotesTotal.toLocaleString()}</div>
+                    <div className="text-lg font-bold">₺{banknotesTotal.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                   </CardFooter>
                 </Card>
 
@@ -204,7 +288,7 @@ const CashCount = () => {
                             className="col-span-1"
                           />
                           <div className="text-right font-medium">
-                            ₺{(coin.value * coin.count).toLocaleString()}
+                            ₺{(coin.value * coin.count).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                           </div>
                         </div>
                       ))}
@@ -212,7 +296,7 @@ const CashCount = () => {
                   </CardContent>
                   <CardFooter className="justify-between">
                     <div className="text-sm text-muted-foreground">Toplam</div>
-                    <div className="text-lg font-bold">₺{coinsTotal.toLocaleString()}</div>
+                    <div className="text-lg font-bold">₺{coinsTotal.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                   </CardFooter>
                 </Card>
               </div>
@@ -223,6 +307,7 @@ const CashCount = () => {
                   currentAmount={cashTotal}
                   banknotesTotal={banknotesTotal}
                   coinsTotal={coinsTotal}
+                  isLoading={isInitialLoading}
                 />
                 
                 <Card className="mt-6">
@@ -239,12 +324,18 @@ const CashCount = () => {
                         <Input
                           id="countDate"
                           type="datetime-local"
-                          defaultValue={new Date().toISOString().slice(0, 16)}
+                          value={countDate}
+                          onChange={(e) => setCountDate(e.target.value)}
                         />
                       </div>
                       <div>
                         <Label htmlFor="countNote">Not (İsteğe Bağlı)</Label>
-                        <Input id="countNote" placeholder="Sayım ile ilgili not..." />
+                        <Input 
+                          id="countNote" 
+                          placeholder="Sayım ile ilgili not..." 
+                          value={countNote}
+                          onChange={(e) => setCountNote(e.target.value)}
+                        />
                       </div>
                     </div>
                   </CardContent>
@@ -252,8 +343,16 @@ const CashCount = () => {
                     <Button 
                       onClick={submitCashCount}
                       className="w-full bg-store-700 hover:bg-store-800"
+                      disabled={isCountLoading}
                     >
-                      Kasa Sayımını Kaydet
+                      {isCountLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Kaydediliyor...
+                        </>
+                      ) : (
+                        "Kasa Sayımını Kaydet"
+                      )}
                     </Button>
                   </CardFooter>
                 </Card>
@@ -301,6 +400,7 @@ const CashCount = () => {
                         id="deliveryDate"
                         type="datetime-local"
                         defaultValue={new Date().toISOString().slice(0, 16)}
+                        onChange={(e) => handleDeliveryChange('date', e.target.value)}
                       />
                     </div>
                     <div>
@@ -318,8 +418,16 @@ const CashCount = () => {
                   <Button 
                     onClick={submitCashDelivery}
                     className="w-full bg-store-700 hover:bg-store-800"
+                    disabled={isDeliveryLoading}
                   >
-                    Nakit Teslimini Kaydet
+                    {isDeliveryLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Kaydediliyor...
+                      </>
+                    ) : (
+                      "Nakit Teslimini Kaydet"
+                    )}
                   </Button>
                 </CardFooter>
               </Card>
@@ -332,6 +440,7 @@ const CashCount = () => {
                   coinsTotal={coinsTotal}
                   showDeliveryWarning={cashDelivery.amount > cashTotal}
                   deliveryAmount={cashDelivery.amount}
+                  isLoading={isInitialLoading}
                 />
 
                 <Card className="mt-6">
@@ -342,22 +451,28 @@ const CashCount = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">₺3,000.00</div>
-                          <div className="text-sm text-muted-foreground">Finans Departmanı</div>
-                        </div>
-                        <div className="text-sm text-muted-foreground">Bugün, 14:30</div>
+                    {isInitialLoading ? (
+                      <div className="space-y-3 animate-pulse">
+                        <div className="h-12 bg-gray-100 rounded"></div>
+                        <div className="h-12 bg-gray-100 rounded"></div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">₺2,500.00</div>
-                          <div className="text-sm text-muted-foreground">Finans Departmanı</div>
-                        </div>
-                        <div className="text-sm text-muted-foreground">Dün, 16:45</div>
+                    ) : previousDeliveries.length > 0 ? (
+                      <div className="space-y-3">
+                        {previousDeliveries.map(delivery => (
+                          <div key={delivery.id} className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium">₺{delivery.miktar.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                              <div className="text-sm text-muted-foreground">{delivery.teslim_alan}</div>
+                            </div>
+                            <div className="text-sm text-muted-foreground">{formatDate(delivery.tarih)}</div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
+                    ) : (
+                      <div className="text-center py-4 text-muted-foreground">
+                        Henüz nakit teslimi yapılmamış
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
