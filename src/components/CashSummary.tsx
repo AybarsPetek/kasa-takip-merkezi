@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CashSummaryProps {
@@ -10,6 +10,7 @@ interface CashSummaryProps {
   coinsTotal: number;
   showDeliveryWarning?: boolean;
   deliveryAmount?: number;
+  isLoading?: boolean;
 }
 
 const CashSummary = ({
@@ -18,13 +19,32 @@ const CashSummary = ({
   banknotesTotal,
   coinsTotal,
   showDeliveryWarning = false,
-  deliveryAmount = 0
+  deliveryAmount = 0,
+  isLoading = false
 }: CashSummaryProps) => {
   const difference = currentAmount - previousAmount;
   const percentChange = previousAmount ? Math.round((difference / previousAmount) * 100) : 0;
   
   // Calculate remaining after delivery
   const remainingAfterDelivery = currentAmount - (deliveryAmount || 0);
+  
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Kasa Özeti</CardTitle>
+          <CardDescription>
+            Kasadaki nakit miktarına genel bakış
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-store-700" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
   
   return (
     <Card>

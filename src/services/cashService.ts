@@ -16,6 +16,41 @@ export interface CashDelivery {
   date?: string;
 }
 
+// Interface for cash count history item
+export interface CashCountHistoryItem {
+  id: string;
+  banknot_toplami: number;
+  bozuk_para_toplami: number;
+  toplam: number;
+  onceki_miktar: number;
+  fark: number;
+  notlar: string | null;
+  tarih: string;
+  kullanici_id: string;
+  durum: string;
+}
+
+// Interface for cash delivery history item
+export interface CashDeliveryHistoryItem {
+  id: string;
+  miktar: number;
+  teslim_alan: string;
+  notlar: string | null;
+  tarih: string;
+  kullanici_id: string;
+  durum: string;
+}
+
+// Interface for cash count detail item
+export interface CashCountDetailItem {
+  id: string;
+  kasa_sayim_id: string;
+  para_tipi: 'banknot' | 'bozuk';
+  deger: number;
+  adet: number;
+  toplam: number;
+}
+
 // Save cash count to database
 export const saveCashCount = async (
   banknotesTotal: number,
@@ -147,6 +182,87 @@ export const fetchLatestCashCount = async () => {
     return data;
   } catch (error) {
     console.error('Error in fetchLatestCashCount:', error);
+    throw error;
+  }
+};
+
+// Fetch cash count history with pagination
+export const fetchCashCountHistory = async (page: number = 1, pageSize: number = 10) => {
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  try {
+    const { data, error, count } = await supabase
+      .from('kasa_sayim')
+      .select('*', { count: 'exact' })
+      .order('tarih', { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      console.error('Error fetching cash count history:', error);
+      throw new Error('Kasa sayım geçmişi yüklenirken bir hata oluştu.');
+    }
+
+    return { data, count: count || 0 };
+  } catch (error) {
+    console.error('Error in fetchCashCountHistory:', error);
+    throw error;
+  }
+};
+
+// Fetch cash delivery history with pagination
+export const fetchCashDeliveryHistory = async (page: number = 1, pageSize: number = 10) => {
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  try {
+    const { data, error, count } = await supabase
+      .from('nakit_teslim')
+      .select('*', { count: 'exact' })
+      .order('tarih', { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      console.error('Error fetching cash delivery history:', error);
+      throw new Error('Nakit teslim geçmişi yüklenirken bir hata oluştu.');
+    }
+
+    return { data, count: count || 0 };
+  } catch (error) {
+    console.error('Error in fetchCashDeliveryHistory:', error);
+    throw error;
+  }
+};
+
+// Fetch details of a specific cash count
+export const fetchCashCountDetails = async (cashCountId: string) => {
+  try {
+    // First get the cash count main record
+    const { data: cashCount, error: countError } = await supabase
+      .from('kasa_sayim')
+      .select('*')
+      .eq('id', cashCountId)
+      .single();
+
+    if (countError) {
+      console.error('Error fetching cash count:', countError);
+      throw new Error('Kasa sayım detayları yüklenirken bir hata oluştu.');
+    }
+
+    // Then get the denomination details
+    const { data: details, error: detailsError } = await supabase
+      .from('kasa_sayim_detay')
+      .select('*')
+      .eq('kasa_sayim_id', cashCountId);
+
+    if (detailsError) {
+      console.error('Error fetching cash count details:', detailsError);
+      throw new Error('Kasa sayım detayları yüklenirken bir hata oluştu.');
+    }
+
+    return { cashCount, details };
+  } catch (error) {
+    console.error('Error in fetchCashCountDetails:', error);
     throw error;
   }
 };
